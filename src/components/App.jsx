@@ -1,30 +1,29 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import ContactForm from './ContactForm/ContactForm';
 import ContactList from './ContactList/ContactList';
 import Filter from './Filter/Filter';
 import Notification from './Notification/Notification';
 
-export class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+export function App() {
+  const [contacts, setContacts] = useState([]);
+  const [filter, setFilter] = useState('');
 
-  componentDidMount() {
+  useEffect(() => {
     const contacts = localStorage.getItem('contacts');
     const parsedContacts = JSON.parse(contacts);
-    parsedContacts && this.setState({ contacts: parsedContacts });
-  }
+    parsedContacts && setContacts(parsedContacts);
+  }, []);
 
-  componentDidUpdate(_, prevState) {
-    if (prevState.contacts !== this.state.contacts)
-      localStorage.setItem('contacts', JSON.stringify(this.state.contacts));
-  }
+  useEffect(
+    prev => {
+      if (prev !== contacts)
+        localStorage.setItem('contacts', JSON.stringify(contacts));
+    },
+    [contacts]
+  );
 
-  addContact = ({ name, number }) => {
-    const { contacts } = this.state;
-
+  const addContact = ({ name, number }) => {
     if (
       contacts.find(
         contact => contact.name.toLowerCase() === name.toLowerCase()
@@ -34,63 +33,48 @@ export class App extends Component {
 
       return;
     }
-
-    this.setState({
-      contacts: [{ name, number, id: nanoid() }, ...contacts],
-      filter: '',
-    });
-  };
-
-  deleteContact = contactId => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(({ id }) => id !== contactId),
-    }));
-  };
-
-  handleFilterChange = ({ target }) => {
-    this.setState({ filter: target.value });
-  };
-
-  filterContact = () => {
-    const { filter, contacts } = this.state;
-
-    return {
-      filteredContacts: contacts.filter(contact =>
-        contact.name.toLowerCase().includes(filter.toLowerCase())
-      ),
+    const newContact = {
+      name,
+      number,
+      id: nanoid(),
     };
+    setContacts(prev => [...prev, newContact]);
   };
 
-  render() {
-    const { filter, contacts } = this.state;
-    const { filteredContacts } = this.filterContact();
+  const deleteContact = contactId => {
+    setContacts(prev => prev.filter(contact => contact.id !== contactId));
+  };
 
-    return (
-      <div
-        style={{
-          textAlign: 'center',
-        }}
-      >
-        <h1>Phonebook</h1>
-        <ContactForm onSubmit={this.addContact} />
+  const handleFilterChange = ({ target }) => {
+    setFilter(target.value);
+  };
 
-        <h2>Contacts</h2>
+  const filteredContacts = contacts.filter(contact =>
+    contact.name.toLowerCase().includes(filter.toLowerCase())
+  );
 
-        {contacts[0] ? (
-          <Filter value={filter} onFilter={this.handleFilterChange} />
-        ) : (
-          <Notification message="No contacts added" />
-        )}
-        {contacts[0] && !filteredContacts[0] && (
-          <Notification message="No contact found" />
-        )}
-        {filteredContacts[0] && (
-          <ContactList
-            contacts={filteredContacts}
-            onDelete={this.deleteContact}
-          />
-        )}
-      </div>
-    );
-  }
+  return (
+    <div
+      style={{
+        textAlign: 'center',
+      }}
+    >
+      <h1>Phonebook</h1>
+      <ContactForm onSubmit={addContact} />
+
+      <h2>Contacts</h2>
+
+      {contacts[0] ? (
+        <Filter value={filter} onFilter={handleFilterChange} />
+      ) : (
+        <Notification message="No contacts added" />
+      )}
+      {contacts[0] && !filteredContacts[0] && (
+        <Notification message="No contact found" />
+      )}
+      {filteredContacts[0] && (
+        <ContactList contacts={filteredContacts} onDelete={deleteContact} />
+      )}
+    </div>
+  );
 }
