@@ -6,22 +6,20 @@ import Filter from './Filter/Filter';
 import Notification from './Notification/Notification';
 
 export function App() {
-  const [contacts, setContacts] = useState([]);
+  const [contacts, setContacts] = useState(parsedContacts());
   const [filter, setFilter] = useState('');
 
+  function parsedContacts() {
+    const savedContacts = localStorage.getItem('contacts');
+    if (savedContacts) {
+      return JSON.parse(savedContacts);
+    } else {
+      return [];
+    }
+  }
   useEffect(() => {
-    const contacts = localStorage.getItem('contacts');
-    const parsedContacts = JSON.parse(contacts);
-    parsedContacts && setContacts(parsedContacts);
-  }, []);
-
-  useEffect(
-    prev => {
-      if (prev !== contacts)
-        localStorage.setItem('contacts', JSON.stringify(contacts));
-    },
-    [contacts]
-  );
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+  }, [contacts]);
 
   const addContact = ({ name, number }) => {
     if (
